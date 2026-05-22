@@ -1,20 +1,34 @@
 import React, { useEffect, useState } from 'react'
-import { createProject, listProjects } from '../api/api'
+import { createProject, listProjects, deleteProject } from '../api/api'
+import { useNavigate } from 'react-router-dom'
 
 export default function Home() {
   const [projects, setProjects] = useState([])
   const [name, setName] = useState('')
+  const navigate = useNavigate()
 
-  useEffect(() => {
-    listProjects().then((r) => setProjects(r.data || []))
-  }, [])
+  async function refresh() {
+    try {
+      const res = await listProjects()
+      setProjects(res.data || [])
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  useEffect(() => { refresh() }, [])
 
   const handleCreate = async () => {
     if (!name) return
     await createProject(name)
-    const res = await listProjects()
-    setProjects(res.data || [])
+    await refresh()
     setName('')
+  }
+
+  const handleDelete = async (id) => {
+    if (!confirm('Delete this project? This cannot be undone.')) return
+    await deleteProject(id)
+    await refresh()
   }
 
   return (
@@ -31,13 +45,17 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        {projects.length === 0 && <div>No projects yet</div>}
+        {projects.length === 0 && <div className="col-span-3 text-center">No projects yet</div>}
         {projects.map((p) => (
-          <div key={p.project_id} className="card">
+          <div key={p.project_id} className="card relative">
             <div className="flex justify-between items-center">
               <div>
                 <div className="font-semibold">{p.project_name}</div>
                 <div className="text-xs text-gray-500">{p.created_at}</div>
+              </div>
+              <div className="flex gap-2">
+                <button className="btn-secondary" onClick={() => navigate(`/project/${p.project_id}/step/1`)}>Continue</button>
+                <button className="btn-danger" onClick={() => handleDelete(p.project_id)}>Delete</button>
               </div>
             </div>
           </div>

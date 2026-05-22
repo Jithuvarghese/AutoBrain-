@@ -10,11 +10,29 @@ import Step4_Sampling from './pages/Step4_Sampling'
 import Step5_Training from './pages/Step5_Training'
 import Step6_Evaluation from './pages/Step6_Evaluation'
 import Step7_Documentation from './pages/Step7_Documentation'
+import { getProject } from './api/api'
+import { useEffect } from 'react'
 
 function ProjectLayout() {
   const { projectId } = useParams()
   const { dispatch } = useProject()
-  // on mount: load project through API (left as TODO)
+  useEffect(() => {
+    let mounted = true
+    async function load() {
+      dispatch({ type: 'SET_LOADING', payload: true })
+      try {
+        const res = await getProject(projectId)
+        if (!mounted) return
+        dispatch({ type: 'SET_PROJECT', payload: res.data })
+      } catch (err) {
+        dispatch({ type: 'SET_ERROR', payload: String(err) })
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false })
+      }
+    }
+    load()
+    return () => { mounted = false }
+  }, [projectId, dispatch])
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
